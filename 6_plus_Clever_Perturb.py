@@ -9,9 +9,9 @@ from sklearn.metrics import (accuracy_score, f1_score, recall_score, precision_s
                              confusion_matrix, classification_report)
 import matplotlib.pyplot as plt
 import seaborn as sns
+from math import pi
 from sklearn.utils.class_weight import compute_class_weight
 from collections import defaultdict
-
 
 # Load the dataset
 file_path = '/Users/mayankraj/Desktop/Thesis Codes /archive/ACI-IoT-2023.csv'
@@ -554,3 +554,180 @@ for metric in clever_metrics + perturbability_metrics:
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+#FSGM COMPARISON CODE
+# Consolidated FGSM results
+fgsm_epsilons = [0.01, 0.05, 0.1]
+fgsm_metrics = {
+    'Accuracy': [results[eps]['Base Metrics']['Accuracy'] for eps in fgsm_epsilons],
+    'Precision': [results[eps]['Base Metrics']['Precision'] for eps in fgsm_epsilons],
+    'Recall': [results[eps]['Base Metrics']['Recall'] for eps in fgsm_epsilons],
+    'F1-Score': [results[eps]['Base Metrics']['F1'] for eps in fgsm_epsilons]
+}
+
+# Plot FGSM Metrics Comparison
+plt.figure(figsize=(12, 6))
+bar_width = 0.2
+x_indexes = np.arange(len(fgsm_epsilons))
+
+for i, (metric, values) in enumerate(fgsm_metrics.items()):
+    plt.bar(x_indexes + i * bar_width, values, width=bar_width, label=metric)
+
+plt.xlabel("FGSM Perturbation Strength (ε)")
+plt.ylabel("Metric Value")
+plt.title("Comparison of FGSM Attack Impact on Model Performance")
+plt.xticks(ticks=x_indexes + bar_width, labels=[f"ε={eps}" for eps in fgsm_epsilons])
+plt.legend()
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
+
+
+
+#PGD Comparison Visualisation
+# Consolidated PGD results
+pgd_epsilons = [0.01, 0.05, 0.1]
+pgd_metrics = {
+    'Accuracy': [pgd_results[eps]['Base Metrics']['Accuracy'] for eps in pgd_epsilons],
+    'Precision': [pgd_results[eps]['Base Metrics']['Precision'] for eps in pgd_epsilons],
+    'Recall': [pgd_results[eps]['Base Metrics']['Recall'] for eps in pgd_epsilons],
+    'F1-Score': [pgd_results[eps]['Base Metrics']['F1'] for eps in pgd_epsilons]
+}
+
+# Plot PGD Metrics Comparison
+plt.figure(figsize=(12, 6))
+bar_width = 0.2
+x_indexes = np.arange(len(pgd_epsilons))
+
+for i, (metric, values) in enumerate(pgd_metrics.items()):
+    plt.bar(x_indexes + i * bar_width, values, width=bar_width, label=metric)
+
+plt.xlabel("PGD Perturbation Strength (ε)")
+plt.ylabel("Metric Value")
+plt.title("Comparison of PGD Attack Impact on Model Performance")
+plt.xticks(ticks=x_indexes + bar_width, labels=[f"ε={eps}" for eps in pgd_epsilons])
+plt.legend()
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
+
+
+#UPDATED THE VISUALIZATION FOR BETTER CLARITY
+# Heatmaps for FGSM & PGD → Clearly shows how performance degrades across different perturbation strengths
+# Radar (Spider) Charts for Category Metrics → Shows category-wise F1-score variation across attack strengths
+# Line Plots for Performance Drop → More intuitive representation of how accuracy, precision, recall, and F1-score decline with increasing ε
+
+
+
+### **Stacked Area Chart for FGSM & PGD Performance Comparison**
+fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+
+fgsm_data = {
+    "Accuracy": [results[eps]['Base Metrics']['Accuracy'] for eps in epsilons],
+    "Precision": [results[eps]['Base Metrics']['Precision'] for eps in epsilons],
+    "Recall": [results[eps]['Base Metrics']['Recall'] for eps in epsilons],
+    "F1-Score": [results[eps]['Base Metrics']['F1'] for eps in epsilons],
+}
+pgd_data = {
+    "Accuracy": [pgd_results[eps]['Base Metrics']['Accuracy'] for eps in pgd_epsilons],
+    "Precision": [pgd_results[eps]['Base Metrics']['Precision'] for eps in pgd_epsilons],
+    "Recall": [pgd_results[eps]['Base Metrics']['Recall'] for eps in pgd_epsilons],
+    "F1-Score": [pgd_results[eps]['Base Metrics']['F1'] for eps in pgd_epsilons],
+}
+
+ax[0].stackplot(epsilons, fgsm_data.values(), labels=fgsm_data.keys(), alpha=0.6)
+ax[0].set_title("FGSM Attack - Performance Degradation")
+ax[0].set_xlabel("Epsilon (ε)")
+ax[0].set_ylabel("Metric Value")
+ax[0].legend(loc="lower left")
+
+ax[1].stackplot(pgd_epsilons, pgd_data.values(), labels=pgd_data.keys(), alpha=0.6, colors=['orange', 'red', 'brown', 'purple'])
+ax[1].set_title("PGD Attack - Performance Degradation")
+ax[1].set_xlabel("Epsilon (ε)")
+ax[1].set_ylabel("Metric Value")
+ax[1].legend(loc="lower left")
+
+plt.tight_layout()
+plt.show()
+
+
+### ** Bubble Chart for FGSM & PGD Impact**
+fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+
+bubble_sizes_fgsm = np.array([1000 * (1 - fgsm_data["Accuracy"][i]) for i in range(len(epsilons))])
+bubble_sizes_pgd = np.array([1000 * (1 - pgd_data["Accuracy"][i]) for i in range(len(pgd_epsilons))])
+
+ax[0].scatter(epsilons, fgsm_data["Accuracy"], s=bubble_sizes_fgsm, color="blue", alpha=0.6, label="Accuracy")
+ax[0].scatter(epsilons, fgsm_data["Precision"], s=bubble_sizes_fgsm, color="green", alpha=0.6, label="Precision")
+ax[0].scatter(epsilons, fgsm_data["Recall"], s=bubble_sizes_fgsm, color="red", alpha=0.6, label="Recall")
+ax[0].scatter(epsilons, fgsm_data["F1-Score"], s=bubble_sizes_fgsm, color="purple", alpha=0.6, label="F1-Score")
+ax[0].set_title("FGSM Attack - Performance Drop (Bubble Size = Impact)")
+ax[0].set_xlabel("Epsilon (ε)")
+ax[0].set_ylabel("Metric Value")
+ax[0].legend()
+
+ax[1].scatter(pgd_epsilons, pgd_data["Accuracy"], s=bubble_sizes_pgd, color="blue", alpha=0.6, label="Accuracy")
+ax[1].scatter(pgd_epsilons, pgd_data["Precision"], s=bubble_sizes_pgd, color="green", alpha=0.6, label="Precision")
+ax[1].scatter(pgd_epsilons, pgd_data["Recall"], s=bubble_sizes_pgd, color="red", alpha=0.6, label="Recall")
+ax[1].scatter(pgd_epsilons, pgd_data["F1-Score"], s=bubble_sizes_pgd, color="purple", alpha=0.6, label="F1-Score")
+ax[1].set_title("PGD Attack - Performance Drop (Bubble Size = Impact)")
+ax[1].set_xlabel("Epsilon (ε)")
+ax[1].set_ylabel("Metric Value")
+ax[1].legend()
+
+plt.tight_layout()
+plt.show()
+
+# **Radar Chart for FGSM & PGD Category-Wise Metrics**
+categories = list(categories)
+metrics = ['Precision', 'Recall', 'F1', 'Accuracy']
+angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
+angles += angles[:1]  # Close the radar chart by repeating the first angle
+
+fig, axs = plt.subplots(1, 2, figsize=(16, 8), subplot_kw=dict(polar=True))
+
+for i, epsilon in enumerate(epsilons):
+    fgsm_values = [results[epsilon]['Category Metrics'][cat]['F1'] for cat in categories]
+    fgsm_values += fgsm_values[:1]  # Close the radar chart by repeating the first value
+
+    axs[0].plot(angles, fgsm_values, label=f"ε={epsilon}", linewidth=2)
+    axs[0].fill(angles, fgsm_values, alpha=0.1)
+
+axs[0].set_xticks(angles[:-1])
+axs[0].set_xticklabels(categories, rotation=45, ha='right')
+axs[0].set_title("FGSM Attack - Category-wise F1 Scores")
+axs[0].legend()
+
+for i, epsilon in enumerate(pgd_epsilons):
+    pgd_values = [pgd_results[epsilon]['Category Metrics'][cat]['F1'] for cat in categories]
+    pgd_values += pgd_values[:1]  # Close the radar chart by repeating the first value
+
+    axs[1].plot(angles, pgd_values, label=f"ε={epsilon}", linewidth=2)
+    axs[1].fill(angles, pgd_values, alpha=0.1)
+
+axs[1].set_xticks(angles[:-1])
+axs[1].set_xticklabels(categories, rotation=45, ha='right')
+axs[1].set_title("PGD Attack - Category-wise F1 Scores")
+axs[1].legend()
+
+plt.show()
+
+### ** Line Plots for FGSM & PGD Performance Drop**
+fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+
+for metric in ['Accuracy', 'Precision', 'Recall', 'F1']:
+    ax[0].plot(epsilons, [results[eps]['Base Metrics'][metric] for eps in epsilons], marker='o', label=metric)
+ax[0].set_title("FGSM Attack - Performance Degradation")
+ax[0].set_xlabel("Epsilon (ε)")
+ax[0].set_ylabel("Metric Value")
+ax[0].legend()
+ax[0].grid(True)
+
+for metric in ['Accuracy', 'Precision', 'Recall', 'F1']:
+    ax[1].plot(pgd_epsilons, [pgd_results[eps]['Base Metrics'][metric] for eps in pgd_epsilons], marker='s', label=metric)
+ax[1].set_title("PGD Attack - Performance Degradation")
+ax[1].set_xlabel("Epsilon (ε)")
+ax[1].set_ylabel("Metric Value")
+ax[1].legend()
+ax[1].grid(True)
+
+plt.tight_layout()
+plt.show()
